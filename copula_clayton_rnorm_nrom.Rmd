@@ -1,0 +1,115 @@
+---
+title: "copula_clayton_norm_gamma"
+author: "Daniel Fynn"
+date: "2024-05-18"
+output: html_document
+---
+
+
+
+#Simulated Data 
+
+```{r}
+library(rstan)
+library(copula)
+
+clayton_mod <- claytonCopula(-0.1, dim=2)
+clayton_out <-  mvdc(clayton_mod, c("norm","norm"), param = 
+                       list(list(mean = 3.5, sd = 0.5), 
+                            list(mean = 1.2, sd = 1)))
+set.seed(11)
+
+N <- 100
+x <- rMvdc(N, clayton_out)
+
+
+write.csv(x, file = "clayton_norm_norm_data_neg.csv")
+
+
+data = list(N = N,
+            x = x[,1],
+            y = x[,2])
+```
+
+```{r}
+simu_fit <- stan(file='clayton_copula_norm_norm.stan', data=data,
+                 seed=11, refresh=1000, 
+                 chains = 2)
+```
+
+```{r}
+print(simu_fit)
+extract_1 <- extract(simu_fit, pars = c("mu1", "sigma1","mu2", "sigma2", "theta"))
+
+
+plot(extract_1$mu1)
+plot(extract_1$mu2)
+
+plot(extract_1$sigma1)
+plot(extract_1$sigma2)
+
+plot(extract_1$theta)
+
+plot(extract_1$mu1, extract_1$mu2)
+plot(extract_1$sigma1, extract_1$sigma2)
+
+
+hist(extract_1$theta)
+
+mean(extract_1$theta)
+```
+
+
+
+#Real Data 
+
+```{r}
+
+y1t = read.csv("rollpred_postfilter.csv")
+y1t = y1t[,2]
+y2t = read.csv("heave_postfilter.csv", header = FALSE)
+y2t = y2t[,1]
+
+N = length(y1t)
+
+data = list(N = N,
+            x = y1t,
+            y = y2t)
+```
+
+
+```{r}
+library(rstan)
+library(copula)
+
+
+simu_fit <- stan(file='clayton_copula_norm_norm.stan', data=data,
+                 seed=11, refresh=1000, 
+                 chains = 2)
+
+
+```
+
+```{r}
+print(simu_fit)
+extract_1 <- extract(simu_fit, pars = c("mu1", "sigma1","mu2", "sigma2", "theta"))
+
+
+plot(extract_1$mu1)
+plot(extract_1$mu2)
+
+plot(extract_1$sigma1)
+plot(extract_1$sigma2)
+
+plot(extract_1$theta)
+
+plot(extract_1$mu1, extract_1$mu2)
+plot(extract_1$sigma1, extract_1$sigma2)
+
+
+hist(extract_1$theta)
+
+mean(extract_1$theta)
+```
+
+
